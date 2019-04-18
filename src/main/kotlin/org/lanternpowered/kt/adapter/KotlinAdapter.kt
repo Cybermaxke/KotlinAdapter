@@ -29,30 +29,31 @@ import com.google.inject.Injector
 import com.google.inject.Module
 import com.google.inject.Provider
 import com.google.inject.Scopes
-import org.lanternpowered.kt.inject
-import org.lanternpowered.kt.inject.InjectablePropertyProvider
-import org.lanternpowered.kt.inScope
+import com.google.inject.util.Modules
+import org.lanternpowered.kt.inject.inScope
+import org.lanternpowered.kt.inject.inject
+import org.lanternpowered.kt.inject.InjectablePropertyModule
+import org.lanternpowered.kt.inject.InjectionPointModule
 import org.spongepowered.api.plugin.PluginAdapter
 import org.spongepowered.api.plugin.PluginContainer
 
 class KotlinAdapter : PluginAdapter {
 
-    override fun <T : Any> createInjector(
-            pluginContainer: PluginContainer, pluginClass: Class<T>, defaultInjector: Injector, pluginModules: List<Module>
-    ): Injector {
-        val module = object : AbstractModule() {
-            override fun configure() {
-                install(InjectablePropertyProvider())
+    override fun createGlobalModule(defaultModule: Module): Module
+            = Modules.combine(defaultModule, InjectablePropertyModule(), InjectionPointModule())
 
+    override fun <T : Any> createPluginModule(pluginContainer: PluginContainer, pluginClass: Class<T>, defaultModule: Module): Module {
+        return object : AbstractModule() {
+            override fun configure() {
                 val instance = pluginClass.kotlin.objectInstance
                 if (instance != null) {
                     bind(pluginClass).toProvider(InstanceProvider(instance)).inScope(Scopes.SINGLETON)
                 } else {
                     bind(pluginClass).inScope(Scopes.SINGLETON)
                 }
+                install(defaultModule)
             }
         }
-        return defaultInjector.createChildInjector(pluginModules.toMutableList().apply { add(0, module) })
     }
 
     /**

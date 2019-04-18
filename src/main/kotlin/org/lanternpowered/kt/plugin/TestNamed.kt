@@ -24,16 +24,9 @@
  */
 package org.lanternpowered.kt.plugin
 
-import org.lanternpowered.kt.inject.inject
-import org.lanternpowered.kt.inject.KotlinModule
-import org.spongepowered.api.plugin.PluginContainer
+import com.google.inject.BindingAnnotation
 
-class TestModule : KotlinModule() {
-
-    private val pluginContainer: PluginContainer by inject()
-
-    override fun configure() {
-        bindAnnotated<String, TestBindingAnnotation>().toInstance(this.pluginContainer.name)
-        bindAnnotated<String, TestNamed>().toProvider(TestNamedProvider())
-    }
-}
+@BindingAnnotation
+@Target(AnnotationTarget.PROPERTY, AnnotationTarget.FIELD, AnnotationTarget.VALUE_PARAMETER)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class TestNamed(val name: String)

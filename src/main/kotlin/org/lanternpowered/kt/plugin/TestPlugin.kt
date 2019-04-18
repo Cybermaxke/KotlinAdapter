@@ -25,23 +25,28 @@
 package org.lanternpowered.kt.plugin
 
 import org.lanternpowered.kt.adapter.KotlinAdapter
-import org.lanternpowered.kt.inject
+import org.lanternpowered.kt.inject.inject
 import org.slf4j.Logger
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.game.state.GameInitializationEvent
 import org.spongepowered.api.plugin.Plugin
+import org.spongepowered.api.plugin.PluginContainer
 
-@Plugin(id = "kotlin_adapter_test", adapter = KotlinAdapter::class, injectionModules = [ TestModule::class ])
+@Plugin(id = "kotlin_adapter_test", name = "Kotlin Adapter Test", adapter = KotlinAdapter::class, injectionModules = [ TestModule::class ])
 object TestPlugin {
 
     private val logger: Logger by inject()
-    @TestBindingAnnotation private val testValue: String by inject()
+    private val pluginContainer: PluginContainer by inject()
+
+    @TestBindingAnnotation private val pluginName: String by inject()
+    @TestNamed("MyTest") private val testName: String by inject()
 
     @Listener
     fun onInit(event: GameInitializationEvent) {
-        this.logger.info("Successfully loaded the Kotlin Adapter test plugin. -> $testValue")
+        this.logger.info("Successfully loaded the Kotlin Adapter test plugin. -> $pluginName")
 
         check(this == TestPlugin) { "Plugin instance mismatch" }
-        check(this.testValue == "Test") { "Custom injection mismatch" }
+        check(this.pluginName == this.pluginContainer.name) { "Custom injection mismatch" }
+        check(this.testName == "MyTest") { "Custom injection mismatch" }
     }
 }

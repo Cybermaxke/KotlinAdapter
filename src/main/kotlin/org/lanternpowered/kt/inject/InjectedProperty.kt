@@ -43,7 +43,7 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
 /**
  * A base class for the injectable property types.
  */
-abstract class InjectedPropertyBase<T> : InjectedProperty<T> {
+@PublishedApi internal abstract class InjectedPropertyBase<T> : InjectedProperty<T> {
 
     internal var value: Any? = uninitialized
 
@@ -60,7 +60,7 @@ abstract class InjectedPropertyBase<T> : InjectedProperty<T> {
 /**
  * The default injected property type, directly initializes the value.
  */
-class DefaultInjectedProperty<T> : InjectedPropertyBase<T>() {
+@PublishedApi internal class DefaultInjectedProperty<T> : InjectedPropertyBase<T>() {
 
     override fun inject(provider: () -> T) {
         this.value = provider()
@@ -71,7 +71,7 @@ class DefaultInjectedProperty<T> : InjectedPropertyBase<T>() {
  * The lazy injected property type, the value will be
  * initialized the first time it's requested.
  */
-class LazyInjectedProperty<T> : InjectedPropertyBase<T>() {
+@PublishedApi internal class LazyInjectedProperty<T> : InjectedPropertyBase<T>() {
 
     private var provider: (() -> T)? = null
 

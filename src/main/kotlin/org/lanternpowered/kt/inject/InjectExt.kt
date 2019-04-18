@@ -24,15 +24,12 @@
  */
 @file:Suppress("NOTHING_TO_INLINE", "UNCHECKED_CAST")
 
-package org.lanternpowered.kt
+package org.lanternpowered.kt.inject
 
 import com.google.inject.Scope
 import com.google.inject.binder.AnnotatedBindingBuilder
 import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
-import org.lanternpowered.kt.inject.InjectedProperty
-import org.lanternpowered.kt.inject.DefaultInjectedProperty
-import org.lanternpowered.kt.inject.LazyInjectedProperty
 import kotlin.reflect.KClass
 
 /**
@@ -40,16 +37,14 @@ import kotlin.reflect.KClass
  * to mark a property for injection by guice. This injection will be
  * done lazily.
  */
-inline fun <reified T> injectLazily() = LazyInjectedProperty<T>()
+inline fun <reified T> injectLazily(): InjectedProperty<T> = LazyInjectedProperty()
 
 /**
  * Creates a new instance of the [InjectedProperty] that can be used
  * to mark a property for injection by guice.
  */
-inline fun <reified T> inject() = DefaultInjectedProperty<T>()
+inline fun <reified T> inject(): InjectedProperty<T> = DefaultInjectedProperty()
 
 inline fun ScopedBindingBuilder.inScope(scope: Scope) = `in`(scope)
 inline fun ScopedBindingBuilder.inScope(scopeAnnotation: Class<out Annotation>) = `in`(scopeAnnotation)
 inline fun ScopedBindingBuilder.inScope(scopeAnnotation: KClass<out Annotation>) = `in`(scopeAnnotation.java)
-
-inline fun <reified A> AnnotatedBindingBuilder<*>.annotatedWith(): LinkedBindingBuilder<*> = annotatedWith(A::class.java as Class<out Annotation>)

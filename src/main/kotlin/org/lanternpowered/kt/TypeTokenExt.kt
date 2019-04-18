@@ -22,18 +22,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.lanternpowered.kt.plugin
+@file:Suppress("UNCHECKED_CAST")
 
-import org.lanternpowered.kt.inject.inject
-import org.lanternpowered.kt.inject.KotlinModule
-import org.spongepowered.api.plugin.PluginContainer
+package org.lanternpowered.kt
 
-class TestModule : KotlinModule() {
+import com.google.common.reflect.TypeToken
+import java.lang.reflect.Type
+import kotlin.reflect.KClass
 
-    private val pluginContainer: PluginContainer by inject()
+inline fun <reified T> typeToken() = object : TypeToken<T>() {}
 
-    override fun configure() {
-        bindAnnotated<String, TestBindingAnnotation>().toInstance(this.pluginContainer.name)
-        bindAnnotated<String, TestNamed>().toProvider(TestNamedProvider())
-    }
-}
+inline val Type.typeToken: TypeToken<*> get() = TypeToken.of(this)
+inline val <T> Class<T>.typeToken: TypeToken<T> get() = TypeToken.of(this)
+inline val <T : Any> KClass<T>.typeToken: TypeToken<T> get() = TypeToken.of(this.java)

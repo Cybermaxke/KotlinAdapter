@@ -24,6 +24,7 @@
  */
 package org.lanternpowered.kt.inject
 
+import com.google.common.reflect.TypeToken
 import com.google.inject.Binder
 import com.google.inject.BindingAnnotation
 import com.google.inject.Injector
@@ -44,7 +45,7 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.javaField
 import kotlin.reflect.jvm.javaType
 
-class InjectablePropertyProvider : Module, TypeListener {
+class InjectablePropertyModule : Module, TypeListener {
 
     override fun configure(binder: Binder) {
         binder.bindListener(Matchers.any(), this)
@@ -93,13 +94,31 @@ class InjectablePropertyProvider : Module, TypeListener {
                         encounter.register(MembersInjector {
                             val injector = injectorProvider.get()
                             val propInstance = getter(it)
-                            propInstance.inject { injector.getInstance(key) }
+
+                            val originalPoint = InjectablePropertyPoint.get()
+
+                            val source = TypeToken.of(field.declaringClass)
+                            val propertyType = TypeToken.of(property.returnType.javaType)
+                            val annotations = property.annotations.toTypedArray()
+
+                            InjectablePropertyPoint.set(InjectionPointImpl.KProperty(source, propertyType, annotations, key, property))
+                            try {
+                                propInstance.inject { injector.getInstance(key) }
+                            } finally {
+                                if (originalPoint != null) {
+                                    InjectablePropertyPoint.set(originalPoint)
+                                } else {
+                                    InjectablePropertyPoint.remove()
+                                }
+                            }
                         })
                     }
                 }
             } catch (e: UnsupportedOperationException) {
-                // Class doesn't support kotlin metadata, so assume
-                // that it's not injectable.
+            } catch (e: Error) {
+                if (e.javaClass.name != "kotlin.reflect.jvm.internal.KotlinReflectionInternalError") {
+                    throw e
+                }
             }
             javaTarget = javaTarget.superclass
         }
