@@ -37,7 +37,7 @@ import org.spongepowered.api.plugin.PluginContainer
 
 class KotlinAdapter : PluginAdapter {
 
-    override fun <T : Any> getInjector(
+    override fun <T : Any> createInjector(
             pluginContainer: PluginContainer, pluginClass: Class<T>, defaultInjector: Injector, pluginModules: List<Module>
     ): Injector {
         val module = object : AbstractModule() {
