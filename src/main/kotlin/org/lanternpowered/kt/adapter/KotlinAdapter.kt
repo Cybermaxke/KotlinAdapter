@@ -26,6 +26,7 @@ package org.lanternpowered.kt.adapter
 
 import com.google.inject.AbstractModule
 import com.google.inject.Injector
+import com.google.inject.Module
 import com.google.inject.Provider
 import com.google.inject.Scopes
 import org.lanternpowered.kt.inject
@@ -36,7 +37,9 @@ import org.spongepowered.api.plugin.PluginContainer
 
 class KotlinAdapter : PluginAdapter {
 
-    override fun <T : Any> getInjector(pluginContainer: PluginContainer, defaultInjector: Injector, pluginClass: Class<T>): Injector {
+    override fun <T : Any> getInjector(
+            pluginContainer: PluginContainer, pluginClass: Class<T>, defaultInjector: Injector, pluginModules: List<Module>
+    ): Injector {
         val module = object : AbstractModule() {
             override fun configure() {
                 install(InjectablePropertyProvider())
@@ -49,7 +52,7 @@ class KotlinAdapter : PluginAdapter {
                 }
             }
         }
-        return defaultInjector.createChildInjector(module)
+        return defaultInjector.createChildInjector(pluginModules.toMutableList().apply { add(0, module) })
     }
 
     /**

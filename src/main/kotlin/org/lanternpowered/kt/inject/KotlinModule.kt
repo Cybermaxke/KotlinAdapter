@@ -35,6 +35,6 @@ abstract class KotlinModule : AbstractModule() {
 
     protected inline fun <reified T> bind(): AnnotatedBindingBuilder<T> = bind(object : TypeLiteral<T>() {})
 
-    protected inline fun <reified T, reified A> bindAnnotated(): LinkedBindingBuilder<T>
+    protected inline fun <reified T, reified A : Annotation> bindAnnotated(): LinkedBindingBuilder<T>
             = bind(object : TypeLiteral<T>() {}).annotatedWith(A::class.java as Class<out Annotation>)
 }

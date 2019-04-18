@@ -32,7 +32,6 @@ import com.google.inject.MembersInjector
 import com.google.inject.Module
 import com.google.inject.TypeLiteral
 import com.google.inject.matcher.Matchers
-import com.google.inject.name.Named
 import com.google.inject.name.Names
 import com.google.inject.spi.TypeEncounter
 import com.google.inject.spi.TypeListener
