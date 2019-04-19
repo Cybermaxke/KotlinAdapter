@@ -25,12 +25,12 @@
 package org.lanternpowered.kt.plugin
 
 import com.google.inject.Provider
-import org.lanternpowered.kt.inject.InjectionPoint
 import org.lanternpowered.kt.inject.inject
+import org.spongepowered.api.inject.InjectionPoint
 
 class TestNamedProvider : Provider<String> {
 
     private val point: Provider<InjectionPoint> by inject()
 
-    override fun get(): String = checkNotNull(checkNotNull(this.point.get()) {"provider"}.getAnnotation(TestNamed::class.java)){"annotation"}.name
+    override fun get(): String = this.point.get().getAnnotation(TestNamed::class.java).name
 }

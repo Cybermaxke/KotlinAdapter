@@ -95,20 +95,20 @@ class InjectablePropertyModule : Module, TypeListener {
                             val injector = injectorProvider.get()
                             val propInstance = getter(it)
 
-                            val originalPoint = InjectablePropertyPoint.get()
+                            val originalPoint = injectablePropertyPoint.get()
 
                             val source = TypeToken.of(field.declaringClass)
                             val propertyType = TypeToken.of(property.returnType.javaType)
                             val annotations = property.annotations.toTypedArray()
 
-                            InjectablePropertyPoint.set(InjectionPointImpl.KProperty(source, propertyType, annotations, key, property))
+                            injectablePropertyPoint.set(InjectionPointImpl.KProperty(source, propertyType, annotations, key))
                             try {
                                 propInstance.inject { injector.getInstance(key) }
                             } finally {
                                 if (originalPoint != null) {
-                                    InjectablePropertyPoint.set(originalPoint)
+                                    injectablePropertyPoint.set(originalPoint)
                                 } else {
-                                    InjectablePropertyPoint.remove()
+                                    injectablePropertyPoint.remove()
                                 }
                             }
                         })

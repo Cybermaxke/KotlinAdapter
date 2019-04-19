@@ -40,7 +40,7 @@ import org.spongepowered.api.plugin.PluginContainer
 class KotlinAdapter : PluginAdapter {
 
     override fun createGlobalModule(defaultModule: Module): Module
-            = Modules.combine(defaultModule, InjectablePropertyModule(), InjectionPointModule())
+            = Modules.combine(Modules.override(defaultModule).with(InjectionPointModule()), InjectablePropertyModule())
 
     override fun <T : Any> createPluginModule(pluginContainer: PluginContainer, pluginClass: Class<T>, defaultModule: Module): Module {
         return object : AbstractModule() {

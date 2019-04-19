@@ -29,21 +29,23 @@ package org.lanternpowered.kt.inject
 import com.google.common.base.MoreObjects
 import com.google.common.reflect.TypeToken
 import com.google.inject.Key
-import java.lang.reflect.Executable
+import org.spongepowered.api.inject.InjectionPoint
 import java.util.Arrays
-import kotlin.reflect.KProperty1
 
-internal abstract class InjectionPointImpl(
-        override val source: TypeToken<*>,
-        override val type: TypeToken<*>,
+internal open class InjectionPointImpl(
+        private val source: TypeToken<*>,
+        private val type: TypeToken<*>,
         private val annotations: Array<Annotation>
 ) : InjectionPoint {
+
+    override fun getSource(): TypeToken<*> = this.source
+    override fun getType(): TypeToken<*> = this.type
 
     override fun <A : Annotation> getAnnotation(annotationClass: Class<A>): A? =
             this.annotations.firstOrNull { annotationClass.isInstance(it) } as A?
 
-    override fun getAnnotations(): Array<Annotation> = this.annotations.copyOf()
-    override fun getDeclaredAnnotations(): Array<Annotation> = getAnnotations()
+    override fun getAnnotations() = this.annotations.copyOf()
+    override fun getDeclaredAnnotations() = getAnnotations()
 
     override fun toString(): String {
         return MoreObjects.toStringHelper("InjectionPoint")
@@ -53,26 +55,6 @@ internal abstract class InjectionPointImpl(
                 .toString()
     }
 
-    internal class Field(
-            source: TypeToken<*>,
-            type: TypeToken<*>,
-            annotations: Array<Annotation>,
-            override val field: java.lang.reflect.Field
-    ) : InjectionPointImpl(source, type, annotations), InjectionPoint.Field
-
-    internal class Parameter(
-            source: TypeToken<*>,
-            type: TypeToken<*>,
-            annotations: Array<Annotation>,
-            override val executable: Executable,
-            override val parameterIndex: Int
-    ) : InjectionPointImpl(source, type, annotations), InjectionPoint.Parameter
-
-    internal class KProperty(
-            source: TypeToken<*>,
-            type: TypeToken<*>,
-            annotations: Array<Annotation>,
-            internal val key: Key<*>,
-            override val property: KProperty1<*, *>
-    ) : InjectionPointImpl(source, type, annotations), InjectionPoint.KProperty
+    internal class KProperty(source: TypeToken<*>, type: TypeToken<*>, annotations: Array<Annotation>, internal val key: Key<*>)
+        : InjectionPointImpl(source, type, annotations)
 }

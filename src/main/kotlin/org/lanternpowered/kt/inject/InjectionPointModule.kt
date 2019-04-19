@@ -33,6 +33,7 @@ import com.google.inject.spi.DependencyAndSource
 import com.google.inject.spi.ProviderInstanceBinding
 import com.google.inject.spi.ProvisionListener
 import org.lanternpowered.kt.typeToken
+import org.spongepowered.api.inject.InjectionPoint
 import java.lang.reflect.Executable
 import java.lang.reflect.Field
 
@@ -63,21 +64,20 @@ class InjectionPointModule : AbstractMatcher<Binding<*>>(), Module, ProvisionLis
         // @Inject InjectionPoint is the last, so we can skip it
         for (i in dependencyChain.size - 2 downTo 0) {
             val dependency = dependencyChain[i].dependency ?: return null
-            val point = InjectablePropertyPoint.get()
-            if (point != null && point.key == dependency.key) {
+            val point = injectablePropertyPoint.get()
+            if (point?.key == dependency.key) {
                 return point
             }
             val spiInjectionPoint = dependency.injectionPoint
             if (spiInjectionPoint != null) {
                 val source = spiInjectionPoint.declaringType.type.typeToken
                 return when (val member = spiInjectionPoint.member) {
-                    is Field -> InjectionPointImpl.Field(source, member.genericType.typeToken, member.annotations, member)
+                    is Field -> InjectionPointImpl(source, member.genericType.typeToken, member.annotations)
                     is Executable -> {
                         val parameterAnnotations = member.parameterAnnotations
                         val parameterTypes = member.genericParameterTypes
                         val index = dependency.parameterIndex
-                        InjectionPointImpl.Parameter(source, parameterTypes[index].typeToken,
-                                parameterAnnotations[index], member, index)
+                        InjectionPointImpl(source, parameterTypes[index].typeToken, parameterAnnotations[index])
                     }
                     else -> throw IllegalStateException("Unsupported Member type: ${member.javaClass.name}")
                 }
@@ -93,4 +93,4 @@ class InjectionPointModule : AbstractMatcher<Binding<*>>(), Module, ProvisionLis
     }
 }
 
-internal val InjectablePropertyPoint = ThreadLocal<InjectionPointImpl.KProperty>()
+internal val injectablePropertyPoint = ThreadLocal<InjectionPointImpl.KProperty>()
