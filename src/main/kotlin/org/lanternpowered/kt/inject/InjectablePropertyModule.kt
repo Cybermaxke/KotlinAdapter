@@ -22,6 +22,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+@file:Suppress("UNCHECKED_CAST")
+
 package org.lanternpowered.kt.inject
 
 import com.google.common.reflect.TypeToken
@@ -43,7 +45,6 @@ import java.lang.reflect.Modifier
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.javaField
-import kotlin.reflect.jvm.javaType
 
 class InjectablePropertyModule : Module, TypeListener {
 
@@ -63,22 +64,19 @@ class InjectablePropertyModule : Module, TypeListener {
                     if (field != null && InjectedProperty::class.java.isAssignableFrom(field.type)) {
                         // Found a valid field, register a member injector
 
-                        // Extract the value type from the property
-                        val valueType = TypeLiteral.get(property.returnType.javaType)
-
-                        // Search for binding annotations
+                        // Search for a binding annotation
                         val bindingAnnotations = property.annotations.filter { it.annotationClass.findAnnotation<BindingAnnotation>() != null }
-                        val key = when {
-                            bindingAnnotations.size > 1 -> throw IllegalStateException("Only one BindingAnnotation is allowed on: $property")
+                        val bindingAnnotation = when {
+                            bindingAnnotations.size > 1 -> throw IllegalStateException("Only one BindingAnnotation is allowed on: ${property.name}")
                             bindingAnnotations.size == 1 -> {
                                 var bindingAnnotation = bindingAnnotations[0]
                                 // Translate the kotlin named to the guice one
                                 if (bindingAnnotation is javax.inject.Named) {
                                     bindingAnnotation = Names.named(bindingAnnotation.value)
                                 }
-                                Key.get(valueType, bindingAnnotation)
+                                bindingAnnotation
                             }
-                            else -> Key.get(valueType)
+                            else -> null
                         }
 
                         // Kotlin property fields can be static (for objects) or non-static, we need
@@ -93,12 +91,15 @@ class InjectablePropertyModule : Module, TypeListener {
                         val injectorProvider = encounter.getProvider(Injector::class.java)
                         encounter.register(MembersInjector {
                             val injector = injectorProvider.get()
-                            val propInstance = getter(it)
+                            val propInstance = getter(it) as InternalInjectedProperty<*, Any?>
+
+                            val valueType = propInstance.getInjectedType(property)
+                            val key = if (bindingAnnotation == null) Key.get(valueType) else Key.get(valueType, bindingAnnotation)
 
                             val originalPoint = injectablePropertyPoint.get()
 
                             val source = TypeToken.of(field.declaringClass)
-                            val propertyType = TypeToken.of(property.returnType.javaType)
+                            val propertyType = TypeToken.of(valueType.type)
                             val annotations = property.annotations.toTypedArray()
 
                             injectablePropertyPoint.set(InjectionPointImpl.KProperty(source, propertyType, annotations, key))

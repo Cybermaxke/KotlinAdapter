@@ -22,16 +22,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@file:Suppress("UNCHECKED_CAST")
+@file:Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
 
 package org.lanternpowered.kt
 
+import com.google.common.reflect.TypeParameter
 import com.google.common.reflect.TypeToken
+import com.google.inject.TypeLiteral
+import java.lang.reflect.AnnotatedElement
 import java.lang.reflect.Type
 import kotlin.reflect.KClass
+import kotlin.reflect.KType
+import kotlin.reflect.jvm.javaType
 
 inline fun <reified T> typeToken() = object : TypeToken<T>() {}
+inline fun <reified T> typeLiteral() = object : TypeLiteral<T>() {}
+inline fun <reified T> typeParameter() = object : TypeParameter<T>() {}
 
 inline val Type.typeToken: TypeToken<*> get() = TypeToken.of(this)
+inline val Type.typeLiteral: TypeLiteral<*> get() = TypeLiteral.get(this)
+
+inline val KType.typeToken: TypeToken<*> get() = TypeToken.of(this.javaType)
+inline val KType.typeLiteral: TypeLiteral<*> get() = TypeLiteral.get(this.javaType)
+
 inline val <T> Class<T>.typeToken: TypeToken<T> get() = TypeToken.of(this)
+inline val <T> Class<T>.typeLiteral: TypeLiteral<T> get() = TypeLiteral.get(this)
+
 inline val <T : Any> KClass<T>.typeToken: TypeToken<T> get() = TypeToken.of(this.java)
+inline val <T : Any> KClass<T>.typeLiteral: TypeLiteral<T> get() = TypeLiteral.get(this.java)
+
+inline val <T> TypeLiteral<T>.typeToken: TypeToken<T> get() = TypeToken.of(this.type) as TypeToken<T>
+inline val <T> TypeToken<T>.typeLiteral: TypeLiteral<T> get() = TypeLiteral.get(this.type) as TypeLiteral<T>
+
+inline fun <reified A : Annotation> AnnotatedElement.getAnnotation(): A? = getAnnotation(A::class.java)
+inline fun <A : Annotation> AnnotatedElement.getAnnotation(type: KClass<A>): A? = getAnnotation(type.java)

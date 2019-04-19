@@ -26,6 +26,13 @@
 
 package org.lanternpowered.kt.inject
 
+import com.google.common.reflect.TypeParameter
+import com.google.common.reflect.TypeToken
+import com.google.inject.Provider
+import com.google.inject.TypeLiteral
+import org.lanternpowered.kt.typeLiteral
+import org.lanternpowered.kt.typeParameter
+import org.lanternpowered.kt.typeToken
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -35,35 +42,80 @@ import kotlin.reflect.KProperty
 interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
 
     /**
-     * Injects the given value.
+     * Whether this property is already injected.
      */
-    fun inject(provider: () -> T)
+    val initialized: Boolean
 }
 
-/**
- * A base class for the injectable property types.
- */
-@PublishedApi internal abstract class InjectedPropertyBase<T> : InjectedProperty<T> {
+@PublishedApi internal abstract class InternalInjectedProperty<T, I> : InjectedProperty<T> {
 
-    internal var value: Any? = uninitialized
+    /**
+     * The type of the object that will be injected into this property.
+     */
+    abstract fun getInjectedType(property: KProperty<*>): TypeLiteral<I>
+
+    /**
+     * Injects the given value.
+     */
+    abstract fun inject(provider: () -> I)
+
+    /**
+     * Throws a exception caused by the injected property not being injected.
+     */
+    internal fun throwNotInjected(property: KProperty<*>): Nothing =
+            throw IllegalStateException("The ${property.name} property is not yet injected.")
+}
+
+@PublishedApi internal open class ProviderInjectedProperty<T> : InternalInjectedProperty<T, Provider<T>>() {
+
+    private var provider: Provider<T>? = null
+
+    override val initialized
+        get() = this.provider !== null
+
+    override fun getInjectedType(property: KProperty<*>) = getProviderType<T>(property)
+
+    override fun inject(provider: () -> Provider<T>) {
+        this.provider = provider()
+    }
 
     override fun getValue(thisRef: Any, property: KProperty<*>): T {
-        val value = this.value
-        return if (value !== uninitialized) value as T else throw IllegalStateException("Not yet injected.")
+        val provider = this.provider
+        return if (provider != null) provider.get() else throwNotInjected(property)
     }
 
-    companion object {
-        internal val uninitialized = Object()
-    }
+    private fun <X> getProviderType(property: KProperty<*>): TypeLiteral<Provider<X>>
+            = object : TypeToken<Provider<X>>() {}.where(object : TypeParameter<X>() {}, property.returnType.typeToken as TypeToken<X>).typeLiteral
+
+}
+@PublishedApi internal class NonNullInjectedProperty<T>(private val message: (KProperty<*>) -> String) : ProviderInjectedProperty<T>() {
+
+    override fun getValue(thisRef: Any, property: KProperty<*>) =
+            super.getValue(thisRef, property) ?: throw IllegalStateException(this.message(property))
+}
+
+@PublishedApi internal abstract class SimpleInjectedProperty<T> : InternalInjectedProperty<T, T>() {
+
+    override fun getInjectedType(property: KProperty<*>) = property.returnType.typeLiteral as TypeLiteral<T>
 }
 
 /**
  * The default injected property type, directly initializes the value.
  */
-@PublishedApi internal class DefaultInjectedProperty<T> : InjectedPropertyBase<T>() {
+@PublishedApi internal class DefaultInjectedProperty<T> : SimpleInjectedProperty<T>() {
+
+    private var value: Any? = uninitialized
+
+    override val initialized
+        get() = this.value !== uninitialized
 
     override fun inject(provider: () -> T) {
         this.value = provider()
+    }
+
+    override fun getValue(thisRef: Any, property: KProperty<*>): T {
+        val value = this.value
+        return if (value !== uninitialized) value as T else throwNotInjected(property)
     }
 }
 
@@ -71,9 +123,13 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
  * The lazy injected property type, the value will be
  * initialized the first time it's requested.
  */
-@PublishedApi internal class LazyInjectedProperty<T> : InjectedPropertyBase<T>() {
+@PublishedApi internal class LazyInjectedProperty<T> : SimpleInjectedProperty<T>() {
 
     private var provider: (() -> T)? = null
+    private var value: Any? = uninitialized
+
+    override val initialized
+        get() = this.value !== uninitialized
 
     override fun inject(provider: () -> T) {
         this.provider = provider
@@ -81,10 +137,16 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
     }
 
     override fun getValue(thisRef: Any, property: KProperty<*>): T {
-        val provider = this.provider
-        if (this.value === uninitialized && provider != null) {
-            this.value = provider()
+        val value = this.value
+        if (value !== uninitialized) {
+            return value as T
         }
-        return super.getValue(thisRef, property)
+        val provider = this.provider
+        if (provider != null) {
+            return provider().also { this.value = it }
+        }
+        throwNotInjected(property)
     }
 }
+
+internal val uninitialized = Object()

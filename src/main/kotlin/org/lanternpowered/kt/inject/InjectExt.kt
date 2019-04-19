@@ -27,9 +27,9 @@
 package org.lanternpowered.kt.inject
 
 import com.google.inject.Scope
-import com.google.inject.binder.AnnotatedBindingBuilder
-import com.google.inject.binder.LinkedBindingBuilder
+import com.google.inject.Provider
 import com.google.inject.binder.ScopedBindingBuilder
+import org.spongepowered.api.inject.InjectionPoint
 import kotlin.reflect.KClass
 
 /**
@@ -44,6 +44,23 @@ inline fun <reified T> injectLazily(): InjectedProperty<T> = LazyInjectedPropert
  * to mark a property for injection by guice.
  */
 inline fun <reified T> inject(): InjectedProperty<T> = DefaultInjectedProperty()
+
+/**
+ * Creates a new instance of the [InjectedProperty]. The property will use
+ * a [Provider] on the background, this makes that returned values by the
+ * property may be different instances every time the property gets accessed.
+ */
+inline fun <reified T> injectProvider(): InjectedProperty<T> = ProviderInjectedProperty()
+
+/**
+ * Creates a new instance of the [InjectedProperty] to inject [InjectionPoint]s.
+ */
+inline fun injectionPoint(): InjectedProperty<InjectionPoint> = NonNullInjectedProperty { "The injection point is unavailable." }
+
+/**
+ * Creates a new instance of the [InjectedProperty] to inject [InjectionPoint]s.
+ */
+inline fun optionalInjectionPoint(): InjectedProperty<InjectionPoint?> = ProviderInjectedProperty()
 
 inline fun ScopedBindingBuilder.inScope(scope: Scope) = `in`(scope)
 inline fun ScopedBindingBuilder.inScope(scopeAnnotation: Class<out Annotation>) = `in`(scopeAnnotation)

@@ -38,8 +38,8 @@ internal open class InjectionPointImpl(
         private val annotations: Array<Annotation>
 ) : InjectionPoint {
 
-    override fun getSource(): TypeToken<*> = this.source
-    override fun getType(): TypeToken<*> = this.type
+    override fun getSource() = this.source
+    override fun getType() = this.type
 
     override fun <A : Annotation> getAnnotation(annotationClass: Class<A>): A? =
             this.annotations.firstOrNull { annotationClass.isInstance(it) } as A?
