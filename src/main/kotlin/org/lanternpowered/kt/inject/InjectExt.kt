@@ -69,8 +69,11 @@ inline fun injectionPoint(): InjectedProperty<InjectionPoint> = ProviderInjected
 /**
  * Creates a new injectable delegation.
  */
-inline fun <reified T> injectDelegate(): T {
-    return DelegateObjectGenerator.generateDelegateObject(T::class.java)
+inline fun <reified T> injectDelegate(): T = createDelegate(T::class.java)
+
+@PublishedApi internal fun <T> createDelegate(type: Class<T>): T {
+    check(type.isInterface) { "The delegate type '${type.simpleName}' isn't a interface." }
+    return DelegateObjectGenerator.generateDelegateObject(type)
 }
 
 inline fun ScopedBindingBuilder.inScope(scope: Scope) = `in`(scope)
