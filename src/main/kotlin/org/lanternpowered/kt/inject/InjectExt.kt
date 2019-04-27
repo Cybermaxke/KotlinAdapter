@@ -37,7 +37,14 @@ import kotlin.reflect.KClass
  * to mark a property for injection by guice. This injection will be
  * done lazily.
  */
-inline fun <reified T> injectLazily(): InjectedProperty<T> = LazyInjectedProperty()
+inline fun <reified T> lazyInject(): InjectedProperty<T> = SynchronizedLazyInjectedProperty()
+
+/**
+ * Creates a new instance of the [InjectedProperty] that can be used
+ * to mark a property for injection by guice. This injection will be
+ * done lazily.
+ */
+inline fun <reified T> lazyInject(safetyMode: LazyThreadSafetyMode): InjectedProperty<T> = LazyInjectedProperty(safetyMode)
 
 /**
  * Creates a new instance of the [InjectedProperty] that can be used

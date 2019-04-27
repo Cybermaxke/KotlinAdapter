@@ -38,6 +38,8 @@ object TestPlugin {
     private val logger: Logger by inject()
     private val pluginContainer: PluginContainer by inject()
 
+    //private val customTestString: TestCustomString by inject()
+    private val testObject: TestObject? by inject()
     @TestBindingAnnotation private val pluginName: String by inject()
     @TestNamed("MyTest") private val testName: String by inject()
 
@@ -48,5 +50,7 @@ object TestPlugin {
         check(this == TestPlugin) { "Plugin instance mismatch" }
         check(this.pluginName == this.pluginContainer.name) { "Custom injection mismatch" }
         check(this.testName == "MyTest") { "Custom injection mismatch" }
+        //check(this.customTestString.value == "Custom Test String") { "Custom injection mismatch" }
+        //check(this.testObject.customTestString.value == "Custom Test String") { "Custom injection mismatch" }
     }
 }

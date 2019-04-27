@@ -29,6 +29,7 @@ package org.lanternpowered.kt.inject
 import com.google.common.reflect.TypeToken
 import com.google.inject.Binder
 import com.google.inject.BindingAnnotation
+import com.google.inject.ConfigurationException
 import com.google.inject.Injector
 import com.google.inject.Key
 import com.google.inject.MembersInjector
@@ -63,9 +64,10 @@ class InjectablePropertyModule : Module, TypeListener {
                     val field = property.javaField
                     if (field != null && InjectedProperty::class.java.isAssignableFrom(field.type)) {
                         // Found a valid field, register a member injector
+                        val annotations = property.annotations.toTypedArray()
 
                         // Search for a binding annotation
-                        val bindingAnnotations = property.annotations.filter { it.annotationClass.findAnnotation<BindingAnnotation>() != null }
+                        val bindingAnnotations = annotations.filter { it.annotationClass.findAnnotation<BindingAnnotation>() != null }
                         val bindingAnnotation = when {
                             bindingAnnotations.size > 1 -> throw IllegalStateException("Only one BindingAnnotation is allowed on: ${property.name}")
                             bindingAnnotations.size == 1 -> {
@@ -89,6 +91,7 @@ class InjectablePropertyModule : Module, TypeListener {
                         } else getterHandle.createLambda()
 
                         val injectorProvider = encounter.getProvider(Injector::class.java)
+                        val nullable = property.returnType.isMarkedNullable
                         encounter.register(MembersInjector {
                             val injector = injectorProvider.get()
                             val propInstance = getter(it) as InternalInjectedProperty<*, Any?>
@@ -100,11 +103,20 @@ class InjectablePropertyModule : Module, TypeListener {
 
                             val source = TypeToken.of(field.declaringClass)
                             val propertyType = TypeToken.of(valueType.type)
-                            val annotations = property.annotations.toTypedArray()
 
                             injectablePropertyPoint.set(InjectionPointImpl.KProperty(source, propertyType, annotations, key))
                             try {
-                                propInstance.inject { injector.getInstance(key) }
+                                propInstance.inject {
+                                    try {
+                                        injector.getInstance(key)
+                                    } catch (ex: ConfigurationException) {
+                                        if (nullable) {
+                                            null
+                                        } else {
+                                            throw ex
+                                        }
+                                    }
+                                }
                             } finally {
                                 if (originalPoint != null) {
                                     injectablePropertyPoint.set(originalPoint)

@@ -24,17 +24,4 @@
  */
 package org.lanternpowered.kt.plugin
 
-import org.lanternpowered.kt.inject.inject
-import org.lanternpowered.kt.inject.KotlinModule
-import org.spongepowered.api.plugin.PluginContainer
-
-class TestModule : KotlinModule() {
-
-    private val pluginContainer: PluginContainer by inject()
-
-    override fun configure() {
-        bindAnnotated<String, TestBindingAnnotation>().toInstance(this.pluginContainer.name)
-        bindAnnotated<String, TestNamed>().toProvider(TestNamedProvider())
-        bind<TestCustomString>().toInstance(TestCustomString("Custom Test String"))
-    }
-}
+inline class TestCustomString(val value: String)

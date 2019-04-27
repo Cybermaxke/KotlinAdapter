@@ -54,5 +54,8 @@ inline val <T : Any> KClass<T>.typeLiteral: TypeLiteral<T> get() = TypeLiteral.g
 inline val <T> TypeLiteral<T>.typeToken: TypeToken<T> get() = TypeToken.of(this.type) as TypeToken<T>
 inline val <T> TypeToken<T>.typeLiteral: TypeLiteral<T> get() = TypeLiteral.get(this.type) as TypeLiteral<T>
 
+inline val <T : Any> TypeLiteral<T>.kotlinClass: KClass<T> get() = (this.rawType as Class<T>).kotlin
+inline val <T : Any> TypeToken<T>.kotlinClass: KClass<T> get() = (this.rawType as Class<T>).kotlin
+
 inline fun <reified A : Annotation> AnnotatedElement.getAnnotation(): A? = getAnnotation(A::class.java)
 inline fun <A : Annotation> AnnotatedElement.getAnnotation(type: KClass<A>): A? = getAnnotation(type.java)
