@@ -34,12 +34,13 @@ import org.spongepowered.api.plugin.Plugin
 import org.spongepowered.api.plugin.PluginContainer
 
 @Plugin(id = "kotlin_adapter_test", name = "Kotlin Adapter Test", adapter = KotlinAdapter::class, injectionModules = [ TestModule::class ])
-object TestPlugin : ITestInterface by injectDelegate() {
+object TestPlugin : ITestInterface by injectDelegate(), @TestNamed("IName Test") IName by injectDelegate() {
 
     private val logger: Logger by inject()
     private val pluginContainer: PluginContainer by inject()
 
     //private val customTestString: TestCustomString by inject()
+
     private val testObject: TestObject? by inject()
     @TestBindingAnnotation private val pluginName: String by inject()
     @TestNamed("MyTest") private val testName: String by inject()
@@ -52,6 +53,7 @@ object TestPlugin : ITestInterface by injectDelegate() {
         check(this.pluginName == this.pluginContainer.name) { "Custom injection mismatch" }
         check(this.testName == "MyTest") { "Custom injection mismatch" }
         check(getTest() == this.pluginContainer.version.orElse("unknown")) { "Custom injection mismatch" }
+        check(this.name == "IName Test") { "Custom injection mismatch" }
         //check(this.customTestString.value == "Custom Test String") { "Custom injection mismatch" }
         //check(this.testObject.customTestString.value == "Custom Test String") { "Custom injection mismatch" }
     }

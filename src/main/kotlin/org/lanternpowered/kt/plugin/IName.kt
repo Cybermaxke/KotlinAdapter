@@ -24,19 +24,20 @@
  */
 package org.lanternpowered.kt.plugin
 
-import org.lanternpowered.kt.inject.KotlinModule
-import org.lanternpowered.kt.inject.inject
-import org.spongepowered.api.plugin.PluginContainer
+import com.google.inject.Provider
+import org.lanternpowered.kt.getAnnotation
+import org.lanternpowered.kt.inject.injectionPoint
 
-class TestModule : KotlinModule() {
-
-    private val pluginContainer: PluginContainer by inject()
-
-    override fun configure() {
-        bindAnnotated<String, TestBindingAnnotation>().toInstance(this.pluginContainer.name)
-        bindAnnotated<String, TestNamed>().toProvider(TestNamedProvider())
-        bind<TestCustomString>().toInstance(TestCustomString("Custom Test String"))
-        bind<ITestInterface>().to(TestInterfaceImpl::class.java)
-        bindAnnotated<IName, TestNamed>().toProvider(INameProvider())
-    }
+interface IName {
+    val name: String
 }
+
+class Name(override val name: String) : IName
+
+class INameProvider : Provider<IName> {
+
+    private val point by injectionPoint()
+
+    override fun get() = Name(this.point.getAnnotation<TestNamed>()!!.name)
+}
+

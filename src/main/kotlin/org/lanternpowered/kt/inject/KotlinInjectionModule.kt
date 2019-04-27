@@ -26,7 +26,6 @@
 
 package org.lanternpowered.kt.inject
 
-import com.google.common.reflect.TypeToken
 import com.google.inject.Binder
 import com.google.inject.BindingAnnotation
 import com.google.inject.Injector
@@ -35,9 +34,10 @@ import com.google.inject.MembersInjector
 import com.google.inject.Module
 import com.google.inject.TypeLiteral
 import com.google.inject.matcher.Matchers
-import com.google.inject.name.Names
 import com.google.inject.spi.TypeEncounter
 import com.google.inject.spi.TypeListener
+import org.lanternpowered.kt.typeLiteral
+import org.lanternpowered.kt.typeToken
 import org.lanternpowered.lmbda.kt.createLambda
 import org.lanternpowered.lmbda.kt.privateLookupIn
 import java.lang.invoke.MethodHandles
@@ -64,6 +64,31 @@ class KotlinInjectionModule : Module, TypeListener {
         } else getterHandle.createLambda()
     }
 
+    private fun findBindingAnnotation(annotations: Array<Annotation>, message: () -> String): Annotation? {
+        val bindingAnnotations = annotations.filter { it.annotationClass.findAnnotation<BindingAnnotation>() != null }
+        return when {
+            bindingAnnotations.size > 1 -> throw IllegalStateException("Only one BindingAnnotation is allowed on: ${message()}")
+            bindingAnnotations.size == 1 -> bindingAnnotations[0]
+            else -> null
+        }
+    }
+
+    private fun withInjectionPoint(key: Key<*>, annotations: Array<Annotation>, source: Class<*>, fn: () -> Unit) {
+        val originalPoint = injectablePropertyPoint.get()
+        val propertyType = key.typeLiteral.typeToken
+
+        injectablePropertyPoint.set(InjectionPointImpl.KProperty(source.typeToken, propertyType, annotations, key))
+        try {
+            fn()
+        } finally {
+            if (originalPoint != null) {
+                injectablePropertyPoint.set(originalPoint)
+            } else {
+                injectablePropertyPoint.remove()
+            }
+        }
+    }
+
     override fun <I : Any> hear(type: TypeLiteral<I>, encounter: TypeEncounter<I>) {
         var javaTarget = type.rawType as Class<*>
         while (javaTarget != Any::class.java && !javaTarget.isArray && !javaTarget.isPrimitive) {
@@ -78,10 +103,22 @@ class KotlinInjectionModule : Module, TypeListener {
                     val injectorProvider = encounter.getProvider(Injector::class.java)
                     val getter = createSupplier(lookup, field)
 
+                    val annotatedType = target.supertypes.find { it.typeToken.rawType == field.type }
+                    val annotations = annotatedType?.annotations?.toTypedArray() ?: arrayOf()
+
+                    val valueType = annotatedType?.typeLiteral ?: field.type.typeLiteral
+                    val bindingAnnotation = findBindingAnnotation(annotations) {
+                        "Only one BindingAnnotation is allowed on the delegate interface '${field.type.simpleName}'"
+                    }
+                    val key = if (bindingAnnotation == null) Key.get(valueType) else Key.get(valueType, bindingAnnotation)
+
                     encounter.register(MembersInjector {
                         val delegateInstance = getter(it) as? InjectedDelegate ?: return@MembersInjector
                         val injector = injectorProvider.get()
-                        delegateInstance.injectDelegateObject(injector.getInstance(field.type))
+
+                        withInjectionPoint(key, annotations, field.declaringClass) {
+                            delegateInstance.injectDelegateObject(injector.getInstance(key))
+                        }
                     })
                 }
 
@@ -90,24 +127,11 @@ class KotlinInjectionModule : Module, TypeListener {
                     if (field != null && InjectedProperty::class.java.isAssignableFrom(field.type)) {
                         // Found a valid field, register a member injector
                         val annotations = property.annotations.toTypedArray()
-
-                        // Search for a binding annotation
-                        val bindingAnnotations = annotations.filter { it.annotationClass.findAnnotation<BindingAnnotation>() != null }
-                        val bindingAnnotation = when {
-                            bindingAnnotations.size > 1 -> throw IllegalStateException("Only one BindingAnnotation is allowed on: ${property.name}")
-                            bindingAnnotations.size == 1 -> {
-                                var bindingAnnotation = bindingAnnotations[0]
-                                // Translate the kotlin named to the guice one
-                                if (bindingAnnotation is javax.inject.Named) {
-                                    bindingAnnotation = Names.named(bindingAnnotation.value)
-                                }
-                                bindingAnnotation
-                            }
-                            else -> null
+                        val bindingAnnotation = findBindingAnnotation(annotations) {
+                            "Only one BindingAnnotation is allowed on the property '${property.name}'"
                         }
 
                         val getter = createSupplier(lookup, field)
-
                         val injectorProvider = encounter.getProvider(Injector::class.java)
                         encounter.register(MembersInjector {
                             val injector = injectorProvider.get()
@@ -116,20 +140,8 @@ class KotlinInjectionModule : Module, TypeListener {
                             val valueType = propInstance.getInjectedType(property)
                             val key = if (bindingAnnotation == null) Key.get(valueType) else Key.get(valueType, bindingAnnotation)
 
-                            val originalPoint = injectablePropertyPoint.get()
-
-                            val source = TypeToken.of(field.declaringClass)
-                            val propertyType = TypeToken.of(valueType.type)
-
-                            injectablePropertyPoint.set(InjectionPointImpl.KProperty(source, propertyType, annotations, key))
-                            try {
+                            withInjectionPoint(key, annotations, field.declaringClass) {
                                 propInstance.inject(property) { injector.getInstance(key) }
-                            } finally {
-                                if (originalPoint != null) {
-                                    injectablePropertyPoint.set(originalPoint)
-                                } else {
-                                    injectablePropertyPoint.remove()
-                                }
                             }
                         })
                     }
