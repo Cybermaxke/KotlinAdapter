@@ -32,7 +32,7 @@ import com.google.inject.Scopes
 import com.google.inject.util.Modules
 import org.lanternpowered.kt.inject.inScope
 import org.lanternpowered.kt.inject.inject
-import org.lanternpowered.kt.inject.InjectablePropertyModule
+import org.lanternpowered.kt.inject.KotlinInjectionModule
 import org.lanternpowered.kt.inject.InjectionPointModule
 import org.spongepowered.api.plugin.PluginAdapter
 import org.spongepowered.api.plugin.PluginContainer
@@ -40,7 +40,7 @@ import org.spongepowered.api.plugin.PluginContainer
 class KotlinAdapter : PluginAdapter {
 
     override fun createGlobalModule(defaultModule: Module): Module
-            = Modules.combine(Modules.override(defaultModule).with(InjectionPointModule()), InjectablePropertyModule())
+            = Modules.combine(Modules.override(defaultModule).with(InjectionPointModule()), KotlinInjectionModule())
 
     override fun <T : Any> createPluginModule(pluginContainer: PluginContainer, pluginClass: Class<T>, defaultModule: Module): Module {
         return object : AbstractModule() {

@@ -22,20 +22,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.lanternpowered.kt.plugin
+package org.lanternpowered.kt.inject
 
-import org.lanternpowered.kt.inject.KotlinModule
-import org.lanternpowered.kt.inject.inject
-import org.spongepowered.api.plugin.PluginContainer
+@PublishedApi internal interface InjectedDelegate {
 
-class TestModule : KotlinModule() {
-
-    private val pluginContainer: PluginContainer by inject()
-
-    override fun configure() {
-        bindAnnotated<String, TestBindingAnnotation>().toInstance(this.pluginContainer.name)
-        bindAnnotated<String, TestNamed>().toProvider(TestNamedProvider())
-        bind<TestCustomString>().toInstance(TestCustomString("Custom Test String"))
-        bind<ITestInterface>().to(TestInterfaceImpl::class.java)
-    }
+    fun injectDelegateObject(delegate: Any)
 }

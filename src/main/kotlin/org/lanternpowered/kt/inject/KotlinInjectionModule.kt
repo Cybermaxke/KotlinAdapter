@@ -41,15 +41,27 @@ import com.google.inject.spi.TypeListener
 import org.lanternpowered.lmbda.kt.createLambda
 import org.lanternpowered.lmbda.kt.privateLookupIn
 import java.lang.invoke.MethodHandles
+import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.javaField
 
-class InjectablePropertyModule : Module, TypeListener {
+class KotlinInjectionModule : Module, TypeListener {
 
     override fun configure(binder: Binder) {
         binder.bindListener(Matchers.any(), this)
+    }
+
+    private fun createSupplier(lookup: MethodHandles.Lookup, field: Field): (Any) -> Any {
+        // Kotlin property fields can be static (for objects) or non-static, we need
+        // to consider both when performing injections
+        val getterHandle = lookup.unreflectGetter(field)
+        return if (Modifier.isStatic(field.modifiers)) {
+            val supplier: () -> Any = getterHandle.createLambda()
+            val fn = { _: Any -> supplier() }
+            fn
+        } else getterHandle.createLambda()
     }
 
     override fun <I : Any> hear(type: TypeLiteral<I>, encounter: TypeEncounter<I>) {
@@ -58,6 +70,20 @@ class InjectablePropertyModule : Module, TypeListener {
             try {
                 val target = javaTarget.kotlin
                 val lookup by lazy { lookup.privateLookupIn(javaTarget) }
+
+                javaTarget.declaredFields.forEach { field ->
+                    if (!field.name.startsWith("$\$delegate_")) {
+                        return@forEach
+                    }
+                    val injectorProvider = encounter.getProvider(Injector::class.java)
+                    val getter = createSupplier(lookup, field)
+
+                    encounter.register(MembersInjector {
+                        val delegateInstance = getter(it) as? InjectedDelegate ?: return@MembersInjector
+                        val injector = injectorProvider.get()
+                        delegateInstance.injectDelegateObject(injector.getInstance(field.type))
+                    })
+                }
 
                 target.declaredMemberProperties.forEach { property ->
                     val field = property.javaField
@@ -80,14 +106,7 @@ class InjectablePropertyModule : Module, TypeListener {
                             else -> null
                         }
 
-                        // Kotlin property fields can be static (for objects) or non-static, we need
-                        // to consider both when performing injections
-                        val getterHandle = lookup.unreflectGetter(field)
-                        val getter: (Any) -> InjectedProperty<Any> = if (Modifier.isStatic(field.modifiers)) {
-                            val supplier: () -> InjectedProperty<Any> = getterHandle.createLambda()
-                            val fn = { _: Any -> supplier() }
-                            fn
-                        } else getterHandle.createLambda()
+                        val getter = createSupplier(lookup, field)
 
                         val injectorProvider = encounter.getProvider(Injector::class.java)
                         encounter.register(MembersInjector {

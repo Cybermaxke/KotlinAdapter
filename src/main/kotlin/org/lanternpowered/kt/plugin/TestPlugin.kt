@@ -26,6 +26,7 @@ package org.lanternpowered.kt.plugin
 
 import org.lanternpowered.kt.adapter.KotlinAdapter
 import org.lanternpowered.kt.inject.inject
+import org.lanternpowered.kt.inject.injectDelegate
 import org.slf4j.Logger
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.game.state.GameInitializationEvent
@@ -33,7 +34,7 @@ import org.spongepowered.api.plugin.Plugin
 import org.spongepowered.api.plugin.PluginContainer
 
 @Plugin(id = "kotlin_adapter_test", name = "Kotlin Adapter Test", adapter = KotlinAdapter::class, injectionModules = [ TestModule::class ])
-object TestPlugin {
+object TestPlugin : ITestInterface by injectDelegate() {
 
     private val logger: Logger by inject()
     private val pluginContainer: PluginContainer by inject()
@@ -50,6 +51,7 @@ object TestPlugin {
         check(this == TestPlugin) { "Plugin instance mismatch" }
         check(this.pluginName == this.pluginContainer.name) { "Custom injection mismatch" }
         check(this.testName == "MyTest") { "Custom injection mismatch" }
+        check(getTest() == this.pluginContainer.version.orElse("unknown")) { "Custom injection mismatch" }
         //check(this.customTestString.value == "Custom Test String") { "Custom injection mismatch" }
         //check(this.testObject.customTestString.value == "Custom Test String") { "Custom injection mismatch" }
     }

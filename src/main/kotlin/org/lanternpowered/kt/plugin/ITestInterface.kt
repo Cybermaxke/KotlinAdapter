@@ -24,18 +24,11 @@
  */
 package org.lanternpowered.kt.plugin
 
-import org.lanternpowered.kt.inject.KotlinModule
-import org.lanternpowered.kt.inject.inject
-import org.spongepowered.api.plugin.PluginContainer
+interface ITestInterface {
 
-class TestModule : KotlinModule() {
+    fun getTest(): String
 
-    private val pluginContainer: PluginContainer by inject()
+    fun setTestValues(a: Int, b: Any)
 
-    override fun configure() {
-        bindAnnotated<String, TestBindingAnnotation>().toInstance(this.pluginContainer.name)
-        bindAnnotated<String, TestNamed>().toProvider(TestNamedProvider())
-        bind<TestCustomString>().toInstance(TestCustomString("Custom Test String"))
-        bind<ITestInterface>().to(TestInterfaceImpl::class.java)
-    }
+    var value: Int
 }

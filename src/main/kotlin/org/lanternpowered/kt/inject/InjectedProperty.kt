@@ -62,10 +62,10 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
      * Throws a exception caused by the injected property not being injected.
      */
     internal fun throwNotInjected(property: KProperty<*>): Nothing =
-            throw IllegalStateException("The ${property.name} property is not yet injected.")
+            throw IllegalStateException("The property '${property.name}' is not yet injected.")
 
     internal fun throwNullValue(property: KProperty<*>): Nothing =
-            throw IllegalStateException("The ${property.name} property received a null value.")
+            throw IllegalStateException("The property '${property.name}' received a null value.")
 }
 
 @PublishedApi internal open class ProviderInjectedProperty<T> : InternalInjectedProperty<T, Provider<T>>() {

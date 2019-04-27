@@ -28,7 +28,9 @@ package org.lanternpowered.kt.inject
 
 import com.google.inject.Scope
 import com.google.inject.Provider
+import com.google.inject.binder.LinkedBindingBuilder
 import com.google.inject.binder.ScopedBindingBuilder
+import org.lanternpowered.kt.plugin.TestInterfaceImpl
 import org.spongepowered.api.inject.InjectionPoint
 import kotlin.reflect.KClass
 
@@ -63,6 +65,13 @@ inline fun <reified T> injectProvider(): InjectedProperty<T> = ProviderInjectedP
  * Creates a new instance of the [InjectedProperty] to inject [InjectionPoint]s.
  */
 inline fun injectionPoint(): InjectedProperty<InjectionPoint> = ProviderInjectedProperty()
+
+/**
+ * Creates a new injectable delegation.
+ */
+inline fun <reified T> injectDelegate(): T {
+    return DelegateObjectGenerator.generateDelegateObject(T::class.java)
+}
 
 inline fun ScopedBindingBuilder.inScope(scope: Scope) = `in`(scope)
 inline fun ScopedBindingBuilder.inScope(scopeAnnotation: Class<out Annotation>) = `in`(scopeAnnotation)
