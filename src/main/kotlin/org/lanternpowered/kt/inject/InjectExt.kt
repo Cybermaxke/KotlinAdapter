@@ -62,12 +62,7 @@ inline fun <reified T> injectProvider(): InjectedProperty<T> = ProviderInjectedP
 /**
  * Creates a new instance of the [InjectedProperty] to inject [InjectionPoint]s.
  */
-inline fun injectionPoint(): InjectedProperty<InjectionPoint> = NonNullInjectedProperty { "The injection point is unavailable." }
-
-/**
- * Creates a new instance of the [InjectedProperty] to inject [InjectionPoint]s.
- */
-inline fun optionalInjectionPoint(): InjectedProperty<InjectionPoint?> = ProviderInjectedProperty()
+inline fun injectionPoint(): InjectedProperty<InjectionPoint> = ProviderInjectedProperty()
 
 inline fun ScopedBindingBuilder.inScope(scope: Scope) = `in`(scope)
 inline fun ScopedBindingBuilder.inScope(scopeAnnotation: Class<out Annotation>) = `in`(scopeAnnotation)

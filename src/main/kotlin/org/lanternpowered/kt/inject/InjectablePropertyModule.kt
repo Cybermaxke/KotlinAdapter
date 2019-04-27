@@ -29,7 +29,6 @@ package org.lanternpowered.kt.inject
 import com.google.common.reflect.TypeToken
 import com.google.inject.Binder
 import com.google.inject.BindingAnnotation
-import com.google.inject.ConfigurationException
 import com.google.inject.Injector
 import com.google.inject.Key
 import com.google.inject.MembersInjector
@@ -91,7 +90,6 @@ class InjectablePropertyModule : Module, TypeListener {
                         } else getterHandle.createLambda()
 
                         val injectorProvider = encounter.getProvider(Injector::class.java)
-                        val nullable = property.returnType.isMarkedNullable
                         encounter.register(MembersInjector {
                             val injector = injectorProvider.get()
                             val propInstance = getter(it) as InternalInjectedProperty<*, Any?>
@@ -106,17 +104,7 @@ class InjectablePropertyModule : Module, TypeListener {
 
                             injectablePropertyPoint.set(InjectionPointImpl.KProperty(source, propertyType, annotations, key))
                             try {
-                                propInstance.inject {
-                                    try {
-                                        injector.getInstance(key)
-                                    } catch (ex: ConfigurationException) {
-                                        if (nullable) {
-                                            null
-                                        } else {
-                                            throw ex
-                                        }
-                                    }
-                                }
+                                propInstance.inject(property) { injector.getInstance(key) }
                             } finally {
                                 if (originalPoint != null) {
                                     injectablePropertyPoint.set(originalPoint)

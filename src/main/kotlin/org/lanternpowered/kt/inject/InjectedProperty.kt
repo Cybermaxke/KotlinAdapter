@@ -56,13 +56,16 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
     /**
      * Injects the given value.
      */
-    abstract fun inject(provider: () -> I)
+    abstract fun inject(property: KProperty<*>, provider: () -> I)
 
     /**
      * Throws a exception caused by the injected property not being injected.
      */
     internal fun throwNotInjected(property: KProperty<*>): Nothing =
             throw IllegalStateException("The ${property.name} property is not yet injected.")
+
+    internal fun throwNullValue(property: KProperty<*>): Nothing =
+            throw IllegalStateException("The ${property.name} property received a null value.")
 }
 
 @PublishedApi internal open class ProviderInjectedProperty<T> : InternalInjectedProperty<T, Provider<T>>() {
@@ -74,24 +77,21 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
 
     override fun getInjectedType(property: KProperty<*>) = getProviderType<T>(property)
 
-    override fun inject(provider: () -> Provider<T>) {
+    override fun inject(property: KProperty<*>, provider: () -> Provider<T>) {
         this.provider = provider()
     }
 
     override fun getValue(thisRef: Any, property: KProperty<*>): T {
         val provider = this.provider
-        return if (provider !== Uninitialized) (provider as Provider<T>).get() else throwNotInjected(property)
+        if (provider == Uninitialized) throwNotInjected(property)
+        val value = (provider as Provider<T>).get()
+        if (!property.returnType.isMarkedNullable && value == null) throwNullValue(property)
+        return value
     }
 
     private fun <X> getProviderType(property: KProperty<*>): TypeLiteral<Provider<X>>
             = object : TypeToken<Provider<X>>() {}.where(object : TypeParameter<X>() {}, property.returnType.typeToken as TypeToken<X>).typeLiteral
 
-}
-
-@PublishedApi internal class NonNullInjectedProperty<T>(private val message: (KProperty<*>) -> String) : ProviderInjectedProperty<T>() {
-
-    override fun getValue(thisRef: Any, property: KProperty<*>) =
-            super.getValue(thisRef, property) ?: throw IllegalStateException(this.message(property))
 }
 
 @PublishedApi internal abstract class SimpleInjectedProperty<T> : InternalInjectedProperty<T, T>() {
@@ -109,8 +109,10 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
     override val initialized
         get() = this.value !== Uninitialized
 
-    override fun inject(provider: () -> T) {
-        this.value = provider()
+    override fun inject(property: KProperty<*>, provider: () -> T) {
+        val value = provider()
+        if (!property.returnType.isMarkedNullable && value == null) throwNullValue(property)
+        this.value = value
     }
 
     override fun getValue(thisRef: Any, property: KProperty<*>): T {
@@ -139,22 +141,24 @@ internal open class LazyInjectedProperty<T> : SimpleInjectedProperty<T>() {
     override val initialized
         get() = this.value !== Uninitialized
 
-    override fun inject(provider: () -> T) {
-        this.provider = Uninitialized
+    override fun inject(property: KProperty<*>, provider: () -> T) {
+        this.provider = provider
         this.value = Uninitialized
     }
 
     override fun getValue(thisRef: Any, property: KProperty<*>) = getValue(property)
 
     internal fun getValue(property: KProperty<*>): T {
-        val value = this.value
+        var value = this.value
         if (value !== Uninitialized) {
             return value as T
         }
         val provider = this.provider
         if (provider !== Uninitialized) {
+            value = (if (provider != null) (provider as () -> T)() else null)
+            if (!property.returnType.isMarkedNullable && value == null) throwNullValue(property)
+            this.value = value as T
             this.provider = Uninitialized // Cleanup
-            return (if (provider != null) (provider as () -> T)() else null).also { this.value = it } as T
         }
         throwNotInjected(property)
     }
