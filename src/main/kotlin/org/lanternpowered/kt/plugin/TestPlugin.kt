@@ -39,7 +39,7 @@ object TestPlugin : ITestInterface by injectDelegate(), @TestNamed("IName Test")
     private val logger: Logger by inject()
     private val pluginContainer: PluginContainer by inject()
 
-    //private val customTestString: TestCustomString by inject()
+    private val customTestString: TestCustomString by inject()
 
     private val testObject: TestObject? by inject()
     @TestBindingAnnotation private val pluginName: String by inject()
@@ -54,7 +54,7 @@ object TestPlugin : ITestInterface by injectDelegate(), @TestNamed("IName Test")
         check(this.testName == "MyTest") { "Custom injection mismatch" }
         check(getTest() == this.pluginContainer.version.orElse("unknown")) { "Custom injection mismatch" }
         check(this.name == "IName Test") { "Custom injection mismatch" }
-        //check(this.customTestString.value == "Custom Test String") { "Custom injection mismatch" }
+        check(this.customTestString.value == "Custom Test String") { "Custom injection mismatch" }
         //check(this.testObject.customTestString.value == "Custom Test String") { "Custom injection mismatch" }
     }
 }

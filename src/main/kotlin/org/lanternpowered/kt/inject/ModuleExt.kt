@@ -22,43 +22,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-@file:Suppress("UNCHECKED_CAST")
-
 package org.lanternpowered.kt.inject
 
-import com.google.common.reflect.TypeToken
 import com.google.inject.AbstractModule
-import com.google.inject.Key
-import com.google.inject.TypeLiteral
-import org.lanternpowered.kt.typeLiteral
+import com.google.inject.Module
+import com.google.inject.PrivateModule
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
-abstract class KotlinModule : AbstractModule() {
-
-    private var kotlinBinder: KotlinBinderImpl? = null
-
-    /**
-     * Gets the [KotlinBinder].
-     */
-    override fun binder(): KotlinBinder {
-        val binder = super.binder()
-        var kotlinBinder = this.kotlinBinder
-        if (kotlinBinder == null || kotlinBinder.binder != binder) {
-            kotlinBinder = binder as? KotlinBinderImpl ?: KotlinBinderImpl(binder)
-        }
-        return kotlinBinder
+/**
+ * Constructs a new [Module].
+ */
+fun module(fn: KotlinBinder.() -> Unit): Module {
+    contract {
+        callsInPlace(fn, InvocationKind.EXACTLY_ONCE)
     }
+    return object : AbstractModule() {
+        override fun configure() {
+            fn(binder() as? KotlinBinder ?: KotlinBinderImpl(binder()))
+        }
+    }
+}
 
-    override fun <T> bind(key: Key<T>) = binder().bind(key)
-    override fun <T> bind(typeLiteral: TypeLiteral<T>) = binder().bind(typeLiteral)
-    override fun <T> bind(type: Class<T>) = binder().bind(type)
-
-    /**
-     * Binds the specified [TypeToken].
-     */
-    protected fun <T> bind(typeToken: TypeToken<T>): KAnnotatedBindingBuilder<T> = bind(typeToken.typeLiteral)
-
-    /**
-     * Binds the specified type [T].
-     */
-    protected inline fun <reified T> bind() = bind(object : TypeLiteral<T>() {})
+/**
+ * Constructs a new [Module].
+ */
+fun privateModule(fn: PrivateKotlinBinder.() -> Unit): Module {
+    contract {
+        callsInPlace(fn, InvocationKind.EXACTLY_ONCE)
+    }
+    return object : PrivateModule() {
+        override fun configure() {
+            fn(binder() as? PrivateKotlinBinder ?: PrivateKotlinBinderImpl(binder()))
+        }
+    }
 }

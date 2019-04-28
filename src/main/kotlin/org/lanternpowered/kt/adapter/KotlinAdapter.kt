@@ -25,15 +25,12 @@
 package org.lanternpowered.kt.adapter
 
 import com.google.inject.AbstractModule
-import com.google.inject.Injector
 import com.google.inject.Module
-import com.google.inject.Provider
 import com.google.inject.Scopes
 import com.google.inject.util.Modules
-import org.lanternpowered.kt.inject.inScope
-import org.lanternpowered.kt.inject.inject
-import org.lanternpowered.kt.inject.KotlinInjectionModule
 import org.lanternpowered.kt.inject.InjectionPointModule
+import org.lanternpowered.kt.inject.KotlinInjectionModule
+import org.lanternpowered.kt.inject.inScope
 import org.spongepowered.api.plugin.PluginAdapter
 import org.spongepowered.api.plugin.PluginContainer
 
@@ -47,22 +44,12 @@ class KotlinAdapter : PluginAdapter {
             override fun configure() {
                 val instance = pluginClass.kotlin.objectInstance
                 if (instance != null) {
-                    bind(pluginClass).toProvider(InstanceProvider(instance)).inScope(Scopes.SINGLETON)
+                    bind(pluginClass).toInstance(instance)
                 } else {
                     bind(pluginClass).inScope(Scopes.SINGLETON)
                 }
                 install(defaultModule)
             }
         }
-    }
-
-    /**
-     * A instance provider that lazily injects the members of the instance.
-     */
-    private class InstanceProvider<T>(private val instance: T) : Provider<T> {
-
-        private val injector: Injector by inject()
-
-        override fun get(): T = this.instance.also { this.injector.injectMembers(it) }
     }
 }

@@ -26,11 +26,10 @@
 
 package org.lanternpowered.kt.inject
 
-import com.google.inject.Scope
 import com.google.inject.Provider
-import com.google.inject.binder.LinkedBindingBuilder
+import com.google.inject.Scope
+import com.google.inject.TypeLiteral
 import com.google.inject.binder.ScopedBindingBuilder
-import org.lanternpowered.kt.plugin.TestInterfaceImpl
 import org.spongepowered.api.inject.InjectionPoint
 import kotlin.reflect.KClass
 
@@ -39,32 +38,34 @@ import kotlin.reflect.KClass
  * to mark a property for injection by guice. This injection will be
  * done lazily.
  */
-inline fun <reified T> lazyInject(): InjectedProperty<T> = SynchronizedLazyInjectedProperty()
+inline fun <reified T> lazyInject(): InjectedProperty<T> = SynchronizedLazyInjectedProperty(object : TypeLiteral<T>() {})
 
 /**
  * Creates a new instance of the [InjectedProperty] that can be used
  * to mark a property for injection by guice. This injection will be
  * done lazily.
  */
-inline fun <reified T> lazyInject(safetyMode: LazyThreadSafetyMode): InjectedProperty<T> = LazyInjectedProperty(safetyMode)
+inline fun <reified T> lazyInject(safetyMode: LazyThreadSafetyMode): InjectedProperty<T> = LazyInjectedProperty(object : TypeLiteral<T>() {}, safetyMode)
 
 /**
  * Creates a new instance of the [InjectedProperty] that can be used
  * to mark a property for injection by guice.
  */
-inline fun <reified T> inject(): InjectedProperty<T> = DefaultInjectedProperty()
+inline fun <reified T> inject(): InjectedProperty<T> = DefaultInjectedProperty(object : TypeLiteral<T>() {})
 
 /**
  * Creates a new instance of the [InjectedProperty]. The property will use
  * a [Provider] on the background, this makes that returned values by the
  * property may be different instances every time the property gets accessed.
  */
-inline fun <reified T> injectProvider(): InjectedProperty<T> = ProviderInjectedProperty()
+inline fun <reified T> injectProvider(): InjectedProperty<T> = ProviderInjectedProperty(object : TypeLiteral<T>() {})
+
+@PublishedApi internal object InjectionPointType : TypeLiteral<InjectionPoint>()
 
 /**
  * Creates a new instance of the [InjectedProperty] to inject [InjectionPoint]s.
  */
-inline fun injectionPoint(): InjectedProperty<InjectionPoint> = ProviderInjectedProperty()
+inline fun injectionPoint(): InjectedProperty<InjectionPoint> = ProviderInjectedProperty(InjectionPointType)
 
 /**
  * Creates a new injectable delegation.

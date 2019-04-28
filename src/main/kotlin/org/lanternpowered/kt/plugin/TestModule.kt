@@ -33,10 +33,10 @@ class TestModule : KotlinModule() {
     private val pluginContainer: PluginContainer by inject()
 
     override fun configure() {
-        bindAnnotated<String, TestBindingAnnotation>().toInstance(this.pluginContainer.name)
-        bindAnnotated<String, TestNamed>().toProvider(TestNamedProvider())
-        bind<TestCustomString>().toInstance(TestCustomString("Custom Test String"))
-        bind<ITestInterface>().to(TestInterfaceImpl::class.java)
-        bindAnnotated<IName, TestNamed>().toProvider(INameProvider())
+        bind<String>().annotatedWith<TestBindingAnnotation>().toInstance(this.pluginContainer.name)
+        bind<String>().annotatedWith<TestNamed>().toProvider(TestNamedProvider())
+        bind<TestCustomString>().toProvider { TestCustomString("Custom Test String") }
+        bind<ITestInterface>().to<TestInterfaceImpl>()
+        bind<IName>().annotatedWith<TestNamed>().toProvider(INameProvider())
     }
 }

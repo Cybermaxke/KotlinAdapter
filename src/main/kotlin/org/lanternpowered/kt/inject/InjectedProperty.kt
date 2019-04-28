@@ -68,14 +68,14 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
             throw IllegalStateException("The property '${property.name}' received a null value.")
 }
 
-@PublishedApi internal open class ProviderInjectedProperty<T> : InternalInjectedProperty<T, Provider<T>>() {
+@PublishedApi internal open class ProviderInjectedProperty<T>(private val injectedType: TypeLiteral<T>) : InternalInjectedProperty<T, Provider<T>>() {
 
     private var provider: Any? = Uninitialized
 
     override val initialized
         get() = this.provider !== Uninitialized
 
-    override fun getInjectedType(property: KProperty<*>) = getProviderType<T>(property)
+    override fun getInjectedType(property: KProperty<*>): TypeLiteral<Provider<T>> = getProviderType(injectedType)
 
     override fun inject(property: KProperty<*>, provider: () -> Provider<T>) {
         this.provider = provider()
@@ -89,20 +89,20 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
         return value
     }
 
-    private fun <X> getProviderType(property: KProperty<*>): TypeLiteral<Provider<X>>
-            = object : TypeToken<Provider<X>>() {}.where(object : TypeParameter<X>() {}, property.returnType.typeToken as TypeToken<X>).typeLiteral
+    private fun <X> getProviderType(injectedType: TypeLiteral<T>): TypeLiteral<Provider<X>>
+            = object : TypeToken<Provider<X>>() {}.where(object : TypeParameter<X>() {}, injectedType.typeToken as TypeToken<X>).typeLiteral
 
 }
 
-@PublishedApi internal abstract class SimpleInjectedProperty<T> : InternalInjectedProperty<T, T>() {
+@PublishedApi internal abstract class SimpleInjectedProperty<T>(private val injectedType: TypeLiteral<T>) : InternalInjectedProperty<T, T>() {
 
-    override fun getInjectedType(property: KProperty<*>) = property.returnType.typeLiteral as TypeLiteral<T>
+    override fun getInjectedType(property: KProperty<*>) = this.injectedType
 }
 
 /**
  * The default injected property type, directly initializes the value.
  */
-@PublishedApi internal class DefaultInjectedProperty<T> : SimpleInjectedProperty<T>() {
+@PublishedApi internal class DefaultInjectedProperty<T>(injectedType: TypeLiteral<T>) : SimpleInjectedProperty<T>(injectedType) {
 
     private var value: Any? = Uninitialized
 
@@ -121,11 +121,11 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
     }
 }
 
-@PublishedApi internal fun <T> LazyInjectedProperty(safetyMode: LazyThreadSafetyMode): InjectedProperty<T> {
+@PublishedApi internal fun <T> LazyInjectedProperty(injectedType: TypeLiteral<T>, safetyMode: LazyThreadSafetyMode): InjectedProperty<T> {
     return when (safetyMode) {
-        LazyThreadSafetyMode.SYNCHRONIZED -> SynchronizedLazyInjectedProperty()
-        LazyThreadSafetyMode.PUBLICATION -> SynchronizedLazyInjectedProperty() // TODO?
-        LazyThreadSafetyMode.NONE -> LazyInjectedProperty()
+        LazyThreadSafetyMode.SYNCHRONIZED -> SynchronizedLazyInjectedProperty(injectedType)
+        LazyThreadSafetyMode.PUBLICATION -> SynchronizedLazyInjectedProperty(injectedType) // TODO?
+        LazyThreadSafetyMode.NONE -> LazyInjectedProperty(injectedType)
     }
 }
 
@@ -133,7 +133,7 @@ interface InjectedProperty<T> : ReadOnlyProperty<Any, T> {
  * The lazy injected property type, the value will be
  * initialized the first time it's requested.
  */
-internal open class LazyInjectedProperty<T> : SimpleInjectedProperty<T>() {
+internal open class LazyInjectedProperty<T>(injectedType: TypeLiteral<T>) : SimpleInjectedProperty<T>(injectedType) {
 
     private var provider: Any? = Uninitialized
     internal var value: Any? = Uninitialized
@@ -164,7 +164,7 @@ internal open class LazyInjectedProperty<T> : SimpleInjectedProperty<T>() {
     }
 }
 
-@PublishedApi internal class SynchronizedLazyInjectedProperty<T> : LazyInjectedProperty<T>() {
+@PublishedApi internal class SynchronizedLazyInjectedProperty<T>(injectedType: TypeLiteral<T>) : LazyInjectedProperty<T>(injectedType) {
 
     private val lock = Object()
 

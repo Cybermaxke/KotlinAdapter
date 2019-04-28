@@ -67,7 +67,7 @@ class KotlinInjectionModule : Module, TypeListener {
     private fun findBindingAnnotation(annotations: Array<Annotation>, message: () -> String): Annotation? {
         val bindingAnnotations = annotations.filter { it.annotationClass.findAnnotation<BindingAnnotation>() != null }
         return when {
-            bindingAnnotations.size > 1 -> throw IllegalStateException("Only one BindingAnnotation is allowed on: ${message()}")
+            bindingAnnotations.size > 1 -> throw IllegalStateException(message())
             bindingAnnotations.size == 1 -> bindingAnnotations[0]
             else -> null
         }
