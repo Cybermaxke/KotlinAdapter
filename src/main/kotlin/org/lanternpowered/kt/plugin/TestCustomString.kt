@@ -24,4 +24,4 @@
  */
 package org.lanternpowered.kt.plugin
 
-inline class TestCustomString(val value: String)
+inline class TestCustomString<T>(val value: String)

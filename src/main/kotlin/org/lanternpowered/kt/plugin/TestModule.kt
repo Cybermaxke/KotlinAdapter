@@ -35,7 +35,7 @@ class TestModule : KotlinModule() {
     override fun configure() {
         bind<String>().annotatedWith<TestBindingAnnotation>().toInstance(this.pluginContainer.name)
         bind<String>().annotatedWith<TestNamed>().toProvider(TestNamedProvider())
-        bind<TestCustomString>().toProvider { TestCustomString("Custom Test String") }
+        bind<TestCustomString<Int>>().toProvider { TestCustomString<Int>("Custom Test String") }
         bind<ITestInterface>().to<TestInterfaceImpl>()
         bind<IName>().annotatedWith<TestNamed>().toProvider(INameProvider())
     }
