@@ -42,7 +42,6 @@ import kotlin.reflect.KType
 import kotlin.reflect.KTypeParameter
 import kotlin.reflect.KTypeProjection
 import kotlin.reflect.KVariance
-import kotlin.reflect.jvm.internal.impl.types.TypeProjection
 import kotlin.reflect.jvm.javaType
 
 inline fun <reified T> typeToken() = object : TypeToken<T>() {}
@@ -138,7 +137,7 @@ private fun toJavaType(typeParameter: KTypeParameter, genericDeclaration: Generi
     return TypeVariableImpl(typeParameter.name, annotations, bounds, annotatedBounds, genericDeclaration)
 }
 
-private fun typeToString(type: Type) = if (type is Class<*>) type.name else type.toString()
+private fun typeToString(type: Type): String = if (type is Class<*>) type.name else type.toString()
 
 private class AnnotatedTypeImpl(private val type: Type, annotations: Array<Annotation>) : AnnotatedElementImpl(annotations), AnnotatedType {
 
@@ -149,7 +148,7 @@ private class AnnotatedTypeImpl(private val type: Type, annotations: Array<Annot
 private class ParameterizedTypeImpl(private val javaClass: Class<*>, private val argumentTypes: Array<Type>) : ParameterizedType {
 
     override fun getRawType(): Type = this.javaClass
-    override fun getOwnerType(): Type = this.javaClass.enclosingClass
+    override fun getOwnerType(): Type? = this.javaClass.enclosingClass
     override fun getActualTypeArguments() = this.argumentTypes.copyOf()
     override fun toString() = "${this.javaClass.name}<${this.argumentTypes.joinToString(", ") { typeToString(it) }}>"
 }
