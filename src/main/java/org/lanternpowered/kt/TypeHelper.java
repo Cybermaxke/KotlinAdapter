@@ -22,21 +22,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.lanternpowered.kt.plugin
+package org.lanternpowered.kt;
 
-import org.lanternpowered.kt.inject.KotlinModule
-import org.lanternpowered.kt.inject.inject
-import org.spongepowered.api.plugin.PluginContainer
+import kotlin.jvm.JvmClassMappingKt;
+import kotlin.reflect.KClass;
 
-class TestModule : KotlinModule() {
+import java.lang.reflect.Array;
 
-    private val pluginContainer: PluginContainer by inject()
+/**
+ * A small helper class to avoid the `kotlin`
+ * variable we are trying to override.
+ */
+class TypeHelper {
 
-    override fun configure() {
-        bind<String>().annotatedWith<TestBindingAnnotation>().toInstance(this.pluginContainer.name)
-        bind<String>().annotatedWith<TestNamed>().toProvider(TestNamedProvider())
-        bind<TestCustomString<IntArray>>().toProvider { TestCustomString<IntArray>("Custom Test String") }
-        bind<ITestInterface>().to<TestInterfaceImpl>()
-        bind<IName>().annotatedWith<TestNamed>().toProvider(INameProvider())
+    static <T> KClass<T> getKClass(Class<T> theClass) {
+        return JvmClassMappingKt.getKotlinClass(theClass);
+    }
+
+    static Class<?> getArrayClass(Class<?> componentType) {
+        return Array.newInstance(componentType, 0).getClass();
     }
 }

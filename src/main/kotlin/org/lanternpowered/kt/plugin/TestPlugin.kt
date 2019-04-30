@@ -39,7 +39,7 @@ object TestPlugin : ITestInterface by injectDelegate(), @TestNamed("IName Test")
     private val logger: Logger by inject()
     private val pluginContainer: PluginContainer by inject()
 
-    private val customTestString: TestCustomString<Int> by inject()
+    private val customTestString: TestCustomString<IntArray> by inject()
 
     private val testObject: TestObject? by inject()
     @TestBindingAnnotation private val pluginName: String by inject()
