@@ -159,6 +159,7 @@ internal open class LazyInjectedProperty<T> : SimpleInjectedProperty<T>() {
             if (!property.returnType.isMarkedNullable && value == null) throwNullValue(property)
             this.value = value as T
             this.provider = Uninitialized // Cleanup
+            return value
         }
         throwNotInjected(property)
     }
