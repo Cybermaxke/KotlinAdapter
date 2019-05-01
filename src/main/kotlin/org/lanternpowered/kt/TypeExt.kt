@@ -129,7 +129,7 @@ val KType.rawType: KClass<*> get() = toRawType(this)
  *
  * @see KType.type
  */
-val Type.jvm: Type get() = this.kotlin.jvmType
+val Type.jvm: Type get() = toJvmType(this)
 
 /**
  * Converts the [Type] to a [KType].
@@ -186,8 +186,11 @@ val KType.type: Type get() = toJavaType(this)
  * Gets the JVM representation of the given [KType].
  *
  * @see KType.type
+ * @see KType.javaType
  */
 val KType.jvmType: Type get() = this.javaType
+
+private fun toJvmType(type: Type): Type = if (type is KTypeHolder) type.kotlin.jvmType else type
 
 private fun toRawType(type: Type): Class<*> {
     return when(type) {
@@ -220,11 +223,11 @@ private fun toKType(type: Type): KType {
         is TypeVariable<*> -> {
             val bounds = type.bounds.map { toKType(it) }.toList()
             val annotations = type.annotations.toList()
-            return KTypeParameterImpl(false, type.name, bounds, KVariance.OUT).createType(annotations = annotations)
+            KTypeParameterImpl(false, type.name, bounds, KVariance.OUT).createType(annotations = annotations)
         }
         is WildcardType -> {
             val lower = type.lowerBounds
-            return if (lower.isNotEmpty()) {
+            if (lower.isNotEmpty()) {
                 toKType(lower[0])
             } else {
                 val upper = type.upperBounds
@@ -289,7 +292,7 @@ private interface KTypeHolder : Type {
 }
 
 /**
- * Converts the given [KType] into a [Type]. Unlike the [KType.javaType] this returns
+ * Converts the given [KType] into a [Type]. Unlike the [KType.jvmType] this returns
  * the [Type] literally translated from the [KType], and not based in the actual [Type]
  * used in the JVM.
  */
@@ -301,7 +304,7 @@ private fun toJavaType(kType: KType, rootKType: RootKType? = null): Type {
             val genericDeclaration = rootKType?.genericDeclaration ?: GenericDeclarationImpl(emptyArray())
             val type = toJavaType(classifier, genericDeclaration, kType, rootKType)
             genericDeclaration.typeVariables.add(type)
-            type
+            return type
         }
         is KClass<*> -> {
             // Attempt to extract the java type from the classifier
@@ -315,12 +318,12 @@ private fun toJavaType(kType: KType, rootKType: RootKType? = null): Type {
             if (javaClass.isArray) {
                 val componentType = arguments.getOrNull(0)?.type
                 if (componentType != null) {
-                    val rawComponentType = componentType.javaType.rawType
+                    val rawComponentType = componentType.jvmType.rawType
                     if (rawComponentType.isPrimitive) { // Found a primitive array, just return the array class
                         return javaClass
                     }
                     // Wrap in a GenericArrayType, even if there aren't any generics, this is to store the KType
-                    return GenericArrayTypeImpl(toJavaType(componentType, rootKType), componentType)
+                    return GenericArrayTypeImpl(toJavaType(componentType, rootKType), kType)
                 }
                 // No component type?
                 return TypeHelper.getArrayClass(Any::class.java)
