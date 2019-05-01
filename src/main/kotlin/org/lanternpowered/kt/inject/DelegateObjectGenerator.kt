@@ -57,7 +57,7 @@ import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
 import java.util.concurrent.atomic.AtomicInteger
 
-@PublishedApi internal object DelegateObjectGenerator {
+internal object DelegateObjectGenerator {
 
     private val counter = AtomicInteger()
     private val delegateSuppliers = MapMaker().weakKeys().concurrencyLevel(4).makeMap<Class<*>, () -> Any>()

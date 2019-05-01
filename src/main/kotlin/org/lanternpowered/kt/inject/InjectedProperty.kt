@@ -155,7 +155,7 @@ internal open class LazyInjectedProperty<T> : SimpleInjectedProperty<T>() {
         }
         val provider = this.provider
         if (provider !== Uninitialized) {
-            value = (if (provider != null) (provider as () -> T)() else null)
+            value = if (provider != null) (provider as () -> T)() else null
             if (!property.returnType.isMarkedNullable && value == null) throwNullValue(property)
             this.value = value as T
             this.provider = Uninitialized // Cleanup

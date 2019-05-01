@@ -24,13 +24,12 @@
  */
 package org.lanternpowered.kt.adapter
 
-import com.google.inject.AbstractModule
 import com.google.inject.Module
-import com.google.inject.Scopes
+import com.google.inject.Singleton
 import com.google.inject.util.Modules
 import org.lanternpowered.kt.inject.InjectionPointModule
 import org.lanternpowered.kt.inject.KotlinInjectionModule
-import org.lanternpowered.kt.inject.inScope
+import org.lanternpowered.kt.inject.module
 import org.spongepowered.api.plugin.PluginAdapter
 import org.spongepowered.api.plugin.PluginContainer
 
@@ -40,16 +39,14 @@ class KotlinAdapter : PluginAdapter {
             = Modules.combine(Modules.override(defaultModule).with(InjectionPointModule()), KotlinInjectionModule())
 
     override fun <T : Any> createPluginModule(pluginContainer: PluginContainer, pluginClass: Class<T>, defaultModule: Module): Module {
-        return object : AbstractModule() {
-            override fun configure() {
-                val instance = pluginClass.kotlin.objectInstance
-                if (instance != null) {
-                    bind(pluginClass).toInstance(instance)
-                } else {
-                    bind(pluginClass).inScope(Scopes.SINGLETON)
-                }
-                install(defaultModule)
+        return module {
+            val instance = pluginClass.kotlin.objectInstance
+            if (instance != null) {
+                bind(pluginClass).toInstance(instance)
+            } else {
+                bind(pluginClass).inScope<Singleton>()
             }
+            install(defaultModule)
         }
     }
 }
